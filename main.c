@@ -29,6 +29,7 @@
 #define DIVISION_INDEX				6
 #define	NONE_INDEX					7
 
+#define	START_TYPE					666
 #define	NUMBER_TYPE					0
 #define	OPEN_BRACKET_TYPE			1
 #define	CLOSE_BRACKET_TYPE			2
@@ -37,6 +38,13 @@
 #define	MULTIPLY_TYPE				5
 #define	DIVISION_TYPE				6
 #define	NONE_TYPE					7
+#define	S_RULE						8
+#define	S_PRIME_RULE				88
+#define T_RULE						9
+#define	T_PRIME_RULE				99
+#define	U_RULE						10
+#define	V_RULE						11
+#define	END_TYPE					-666
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +60,9 @@ typedef struct	s_token
 
 int			get_type_of_token(char *token)
 {
-	if (token[0] >= 48 && token[0] <= 57)
+	if (!token)
+		return (END_TYPE);
+	else if (token[0] >= 48 && token[0] <= 57)
 		return (NUMBER_TYPE);
 	else if (ft_strequ(token, "("))
 		return (OPEN_BRACKET_TYPE);
@@ -195,6 +205,8 @@ void lexer(char *line, t_list **tokens_list)
 		else
 			ft_lstaddend(tokens_list, token);
 	}
+	token = ft_lstnew(create_token_struct(NULL), sizeof(t_token));
+	ft_lstaddend(tokens_list, token);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -212,16 +224,16 @@ void lexer(char *line, t_list **tokens_list)
 typedef struct			s_ptree
 {
 		int				id;
-		void			*data;
+		char			*data;
 		int				type;
 		//struct s_ptree	**childs;
 		t_list			*childs_lst;
 		int				nb_childs;
+		t_btree			*ast;
 }						t_ptree;
 
 void 	ft_ptree_create_node(t_ptree **tree, void *data, int type)
 {
-	// t_ptree		*tree;
 	static int	id = -1;
 
 	id++;
@@ -231,128 +243,135 @@ void 	ft_ptree_create_node(t_ptree **tree, void *data, int type)
 	(*tree)->type = type;
 	(*tree)->childs_lst = NULL;
 	(*tree)->nb_childs = 0;
-	// return (&tree);
+	(*tree)->ast = NULL;
 }
-
-// void	ft_ptree_tab_del(t_ptree ***tab)
-// {
-// 	int		i;
-//
-// 	if (!*tab || !(*tab)[0])
-// 		return ;
-// 	i = -1;
-// 	while ((*tab)[++i])
-// 		ft_memdel((void **)&(*tab)[i]);
-// 	ft_memdel((void **)&(*tab)[i]);
-// 	ft_memdel((void **)tab);
-// 	*tab = NULL;
-// }
-//
-// int		ft_realloc_ptree_tab(t_ptree ***tab, t_ptree *elem)
-// {
-// 	int		i;
-// 	t_ptree	**tmp;
-//
-// 	if (*tab == NULL || !elem)
-// 		return (FALSE);
-// 	i = -1;
-// 	while ((*tab)[++i])
-// 		;
-// 	if (!(tmp = ft_memalloc((i + 2) * sizeof(t_ptree *))))
-// 		return (FALSE);
-// 	i = -1;
-// 	while ((*tab)[++i])
-// 		if (!(tmp[i] = (*tab)[i]))
-// 			return (FALSE);
-// 	if (!(tmp[i] = elem))
-// 		return (FALSE);
-// 	tmp[i + 1] = NULL;
-// 	// FREE
-// 	//ft_ptree_tab_del(tab);
-// 	*tab = tmp;
-// 	return (TRUE);
-// }
-
-// int		ft_ptree_add_child(t_ptree **tree, t_ptree *child)
-// {
-// 	if (!(*tree))
-// 		return (FALSE);
-// 	if ((*tree)->nb_childs == 0)
-// 	{
-// 		(*tree)->childs = ft_memalloc(sizeof(t_ptree *) * 2);
-// 		(*tree)->childs[0] = child;
-// 		(*tree)->childs[1] = NULL;
-// 		(*tree)->nb_childs++;
-// 		return (TRUE);
-// 	}
-// 	ft_realloc_ptree_tab(&(*tree)->childs, child);
-// 	(*tree)->nb_childs++;
-// 	return (TRUE);
-// }
 
 int		ft_ptree_add_child(t_ptree **tree, void *data, int type)
 {
 	t_list	*tmp;
 	t_ptree	*child;
 
-	if (!(*tree))
+	if (!tree)
 		return (FALSE);
 	ft_ptree_create_node(&child, data, type);
-	tmp = ft_lstnew(child, sizeof(t_ptree *));
+	if (!(tmp = ft_lstnew(&child, sizeof(t_ptree *))))
+	{
+		ft_printf("erreur de lstnew dans add_child\n");
+		return (FALSE);
+	}
 	if ((*tree)->nb_childs == 0)
 	{
 		(*tree)->childs_lst = tmp;
 		(*tree)->nb_childs++;
-		return (TRUE);
+		return (child->id);
 	}
 	ft_lstaddend(&(*tree)->childs_lst, tmp);
 	(*tree)->nb_childs++;
-	return (TRUE);
+	return (child->id);
 }
 
-// int		ft_ptree_add_child_with_id(t_ptree *tree, t_ptree *child, int id)
+// int		ft_ptree_add_child_with_id(t_ptree **tree, int id, void *data, int type)
 // {
 // 	t_list	*tmp;
+// 	t_ptree	*child;
 //
 // 	if (!tree)
-// 		return (FALSE);
-// 	if (tree->id == id)
+// 		return (-1);
+// 	if ((*tree)->id == id)
 // 	{
-// 		tmp = ft_lstnew(child, sizeof(t_ptree *));
-// 		if (tree->nb_childs == 0)
+// 		ft_ptree_create_node(&child, data, type);
+// 		tmp = ft_lstnew(&child, sizeof(t_ptree *));
+// 		if ((*tree)->nb_childs == 0)
 // 		{
-// 			tree->childs_lst = tmp;
-// 			tree->nb_childs++;
-// 			return (TRUE);
+// 			(*tree)->childs_lst = tmp;
+// 			(*tree)->nb_childs++;
+// 			return (child->id);
 // 		}
-// 		ft_lstaddend(&tree->childs_lst, tmp);
-// 		tree->nb_childs++;
-// 		return (TRUE);
+// 		ft_lstaddend(&(*tree)->childs_lst, tmp);
+// 		(*tree)->nb_childs++;
+// 		return (child->id);
 // 	}
-// 	tmp = tree->childs_lst;
+// 	tmp = (*tree)->childs_lst;
 // 	while (tmp)
 // 	{
-// 		ft_ptree_add_child_with_id(((t_ptree *)(tmp->content)), child, id);
+// 		ft_ptree_add_child_with_id(((t_ptree **)(tmp->content)), id, data, type);
 // 		tmp = tmp->next;
 // 	}
-// 	return (FALSE);
+// 	return (-1);
 // }
 
+t_ptree		**ft_ptree_get_node_with_id(t_ptree **tree, int id)
+{
+	t_list	*tmp;
 
-// t_ptree		*get_childs_of_node(t_ptree *tree, int id)
-// {
-// 	t_list *tmp;
-//
-// 	tmp = tree->childs_lst;
-// 	while (tmp)
-// 	{
-// 		if (((t_ptree *)(tmp->content))->id == id)
-// 			return (((t_ptree *)(tmp->content)));
-// 		get_childs_of_node(((t_ptree *)(tmp->content)), id);
-// 		tmp = tmp->next;
-// 	}
-// 	return (NULL);
-// }
+	if (!tree)
+		return (NULL);
+	if ((*tree)->id == id)
+		return (tree);
+	tmp = (*tree)->childs_lst;
+	while (tmp)
+	{
+		if ((*((t_ptree **)(tmp->content)))->id == id)
+			return (((t_ptree **)(tmp->content)));
+		ft_ptree_get_node_with_id(((t_ptree **)(tmp->content)), id);
+		tmp = tmp->next;
+	}
+	return (NULL);
+}
+
+void 	del_func(void *content, size_t size)
+{
+	// Free un child
+	(void)content;
+	(void)size;
+}
+
+int		ft_ptree_remove_node_with_id(t_ptree **tree, int id)
+{
+	t_list	*tmp;
+	t_list	*prev;
+
+	if (!tree)
+		return (FALSE);
+	tmp = (*tree)->childs_lst;
+	if (tmp && (*((t_ptree **)(tmp->content)))->id == id)
+	{
+		prev = tmp;
+		(*tree)->childs_lst = tmp->next;
+		ft_lstdelone(&prev, del_func);
+		(*tree)->nb_childs--;
+		return (TRUE);
+	}
+	while (tmp)
+	{
+		if (tmp->next && (*((t_ptree **)(tmp->next->content)))->id == id)
+		{
+			prev = tmp->next;
+			tmp->next = tmp->next->next;
+			ft_lstdelone(&prev, &del_func);
+			(*tree)->nb_childs--;
+			return (TRUE);
+		}
+		ft_ptree_remove_node_with_id(((t_ptree **)(tmp->content)), id);
+		tmp = tmp->next;
+	}
+	return (FALSE);
+}
+
+t_ptree		*get_childs_of_node(t_ptree *tree, int id)
+{
+	t_list *tmp;
+
+	tmp = tree->childs_lst;
+	while (tmp)
+	{
+		if (((t_ptree *)(tmp->content))->id == id)
+			return (((t_ptree *)(tmp->content)));
+		get_childs_of_node(((t_ptree *)(tmp->content)), id);
+		tmp = tmp->next;
+	}
+	return (NULL);
+}
 
 void 		print_margin(int level)
 {
@@ -361,27 +380,103 @@ void 		print_margin(int level)
 		ft_printf("\t");
 }
 
-void 		print_type(t_ptree *tree)
+void 		print_type(t_ptree **tree)
 {
-	ft_printf("type: %d ", tree->type);
+	if (tree)
+		ft_printf("type: %d ", (*tree)->type);
 }
 
-void 		print_id(t_ptree *tree)
+void 		print_id(t_ptree **tree)
 {
-	ft_printf("type: %d ", tree->id);
+	if (tree)
+		ft_printf("id: %d ", (*tree)->id);
 }
 
-void 		print_ptree(int level, t_ptree *tree)
+void 		print_ptree_id(int level, t_ptree **tree)
 {
 	t_list *tmp;
 
+	if (!tree)
+		return ;
 	print_margin(level);
 	print_id(tree);
-	tmp = tree->childs_lst;
+	tmp = (*tree)->childs_lst;
 	while (tmp)
 	{
 		ft_printf("\n");
-		print_ptree(level + 1, ((t_ptree *)(tmp->content)));
+		print_ptree_id(level + 1, ((t_ptree **)(tmp->content)));
+		tmp = tmp->next;
+	}
+}
+
+void 		print_ptree_type(int level, t_ptree **tree)
+{
+	t_list *tmp;
+
+	if (!tree)
+		return ;
+	print_margin(level);
+	print_type(tree);
+	tmp = (*tree)->childs_lst;
+	while (tmp)
+	{
+		ft_printf("\n");
+		print_ptree_type(level + 1, ((t_ptree **)(tmp->content)));
+		tmp = tmp->next;
+	}
+}
+
+char		*get_str_type(int type)
+{
+	if (type == NUMBER_TYPE)
+		return ("NUMBER");
+	else if (type == OPEN_BRACKET_TYPE)
+		return ("(");
+	else if (type == CLOSE_BRACKET_TYPE)
+		return (")");
+	else if (type == PLUS_TYPE)
+		return ("+");
+	else if (type == MINUS_TYPE)
+		return ("-");
+	else if (type == MULTIPLY_TYPE)
+		return ("x");
+	else if (type == DIVISION_TYPE)
+		return ("/");
+	else if (type == NONE_TYPE)
+		return ("none");
+	else if (type == S_RULE)
+		return ("S_rule");
+	else if (type == S_PRIME_RULE)
+		return ("S_prime_rule");
+	else if (type == T_RULE)
+		return ("T_rule");
+	else if (type == T_PRIME_RULE)
+		return ("T_prime_rule");
+	else if (type == U_RULE)
+		return ("U_rule");
+	else if (type == V_RULE)
+		return ("V_rule");
+	else if (type == START_TYPE)
+		return ("START");
+	else if (type == END_TYPE)
+		return ("END");
+	return ("bad type");
+}
+
+void 		print_ptree(int level, t_ptree **tree)
+{
+	t_list *tmp;
+
+	if (!tree)
+		return ;
+	print_margin(level);
+	ft_printf("id: %d, type: %s data: %s", (*tree)->id, get_str_type((*tree)->type), (*tree)->data);
+	// print_type(tree);
+	tmp = (*tree)->childs_lst;
+	while (tmp)
+	{
+		ft_printf("\n");
+		print_ptree(level + 1, ((t_ptree **)(tmp->content)));
 		tmp = tmp->next;
 	}
 }
@@ -404,29 +499,295 @@ t_tokens_list		*create_tokens_list_struct(t_list *lst)
 	return (result);
 }
 
-// int		test_current_token(t_tokens_list **tokens_list_struct, int type, t_ptree **subtree)
-// {
-// 	if ((*tokens_list_struct)->index + 1 > (*tokens_list_struct)->size)
-// 		return (FALSE);
-// 	if (((t_token *)((*tokens_list_struct)->tokens_list->content))->type == type)
-// 	{
-// 		ft_ptree_add_child((subtree), ft_ptree_create_node(NULL, type));
-// 		(*tokens_list_struct)->index++;
-// 		return (TRUE);
-// 	}
-// 	return (FALSE);
-// }
+int		test_current_token(t_tokens_list **tokens_list_struct, int type, t_ptree **subtree)
+{
+	t_list	*good_token;
+
+	good_token = ft_lsti((*tokens_list_struct)->tokens_list, (*tokens_list_struct)->index);
+	if ((*tokens_list_struct)->index + 1 > (*tokens_list_struct)->size)
+		return (FALSE);
+	// ft_printf("test token : token[%s] index[%d] size[%d] type[%d] vs type entre[%d]\n", ((t_token *)(good_token->content))->token, (*tokens_list_struct)->index, (*tokens_list_struct)->size, ((t_token *)(good_token->content))->type, type);
+	// ft_printf("dans test current id arbre[%d] type[%d]\n", (*subtree)->id, (*subtree)->type);
+	if (((t_token *)(good_token->content))->type == type)
+	{
+		ft_ptree_add_child(subtree, ((t_token *)(good_token->content))->token, type);
+		// ft_printf("\nDans test current token, retour add child [%d]\n", ft_ptree_add_child(subtree, NULL, type));
+		(*tokens_list_struct)->index++;
+		// print_ptree_type(0, subtree);
+		return (TRUE);
+	}
+	return (FALSE);
+}
 
 // POUR TEST
 
-// int		S(t_tokens_list **tokens_list_struct, t_ptree **tree)
-// {
-//
-// }
+int		S_function(t_tokens_list **tokens_list_struct, t_ptree **tree);
+
+int		U_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
+{
+	int		id;
+	int		save_index;
+	t_ptree		**tmp;
+
+	id = ft_ptree_add_child(tree, NULL, U_RULE);
+	tmp = ft_ptree_get_node_with_id(tree, id);
+	save_index = (*tokens_list_struct)->index;
+
+	if (test_current_token(tokens_list_struct, OPEN_BRACKET_TYPE, tmp) && S_function(tokens_list_struct, tmp) && test_current_token(tokens_list_struct, CLOSE_BRACKET_TYPE, tmp))
+	{
+		return (TRUE);
+	}
+	(*tokens_list_struct)->index = save_index;
+	// Reset du noeud courant
+	ft_ptree_remove_node_with_id(tree, id);
+	id = ft_ptree_add_child(tree, NULL, S_RULE);
+	tmp = ft_ptree_get_node_with_id(tree, id);
+
+	if (test_current_token(tokens_list_struct, NUMBER_TYPE, tmp))
+	{
+		return (TRUE);
+	}
+	(*tokens_list_struct)->index = save_index;
+
+	ft_ptree_remove_node_with_id(tree, id);
+	return (FALSE);
+}
+
+int		T_prime_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
+{
+	int		save_index;
+
+	save_index = (*tokens_list_struct)->index;
+	if (test_current_token(tokens_list_struct, MULTIPLY_TYPE, tree) && U_function(tokens_list_struct, tree) && T_prime_function(tokens_list_struct, tree))
+	{
+		return (TRUE);
+	}
+	(*tokens_list_struct)->index = save_index;
+	if (test_current_token(tokens_list_struct, DIVISION_TYPE, tree) && U_function(tokens_list_struct, tree) && T_prime_function(tokens_list_struct, tree))
+	{
+		return (TRUE);
+	}
+	(*tokens_list_struct)->index = save_index;
+
+	return (TRUE);
+}
+
+int		T_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
+{
+	int		id;
+	int		save_index;
+	t_ptree		**tmp;
+
+	id = ft_ptree_add_child(tree, NULL, T_RULE);
+	tmp = ft_ptree_get_node_with_id(tree, id);
+	save_index = (*tokens_list_struct)->index;
+
+	if (U_function(tokens_list_struct, tmp) && T_prime_function(tokens_list_struct, tmp))
+	{
+		return (TRUE);
+	}
+	(*tokens_list_struct)->index = save_index;
+
+	ft_ptree_remove_node_with_id(tree, id);
+	return (FALSE);
+}
+
+int		S_prime_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
+{
+	int		save_index;
+
+	save_index = (*tokens_list_struct)->index;
+	if (test_current_token(tokens_list_struct, PLUS_TYPE, tree) && S_function(tokens_list_struct, tree) && S_prime_function(tokens_list_struct, tree))
+	{
+		return (TRUE);
+	}
+	(*tokens_list_struct)->index = save_index;
+	if (test_current_token(tokens_list_struct, MINUS_TYPE, tree) && S_function(tokens_list_struct, tree) && S_prime_function(tokens_list_struct, tree))
+	{
+		return (TRUE);
+	}
+	(*tokens_list_struct)->index = save_index;
+	return (TRUE);
+}
+
+int		S_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
+{
+	int		id;
+	int		save_index;
+	t_ptree		**tmp;
+
+	// Creation du nouveau noeud
+	id = ft_ptree_add_child(tree, NULL, S_RULE);
+	tmp = ft_ptree_get_node_with_id(tree, id);
+	save_index = (*tokens_list_struct)->index;
+	if (T_function(tokens_list_struct, tmp) && S_prime_function(tokens_list_struct, tmp))
+	{
+		return (TRUE);
+	}
+	(*tokens_list_struct)->index = save_index;
+
+	ft_ptree_remove_node_with_id(tree, id);
+	return (FALSE);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //					FIN PARSE TREE
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//							AST
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+typedef struct		s_ast_token
+{
+	int				type;
+	char			*data;
+}					t_ast_token;
+
+void 		number_procedure(t_ptree **tree)
+{
+	t_ast_token		*token;
+
+	token = ft_memalloc(sizeof(t_ast_token));
+	token->type = (*tree)->type;
+	token->data	= (*tree)->data;
+	(*tree)->ast = ft_btree_create_node(token);
+}
+
+void 		operator_procedure(t_ptree **tree)
+{
+	(*tree)->ast = NULL;
+}
+
+void 		U_procedure(t_ptree **tree)
+{
+	// t_ast_token		*token;
+	t_list			*tmp;
+
+	tmp = (*tree)->childs_lst;
+	if ((*tree)->nb_childs == 3)
+	{
+		// token = ft_memalloc(sizeof(t_ast_token));
+		// token->type = (*((t_ptree **)(tmp->next->content)))->type;
+		// (*tree)->ast = ft_btree_create_node(token);
+		// (*tree)->ast->left = (*((t_ptree **)(tmp->content)))->ast;
+		// (*tree)->ast->right = (*((t_ptree **)(tmp->next->next->content)))->ast;
+		(*tree)->ast = (*((t_ptree **)(tmp->next->content)))->ast;
+	}
+	else
+		(*tree)->ast = (*((t_ptree **)(tmp->content)))->ast;
+}
+
+void 		rules_procedure(t_ptree **tree)
+{
+	t_ast_token		*token;
+	t_list			*tmp;
+
+	tmp = (*tree)->childs_lst;
+	if ((*tree)->nb_childs == 3)
+	{
+		token = ft_memalloc(sizeof(t_ast_token));
+		token->type = (*((t_ptree **)(tmp->next->content)))->type;
+		token->data = (*((t_ptree **)(tmp->next->content)))->data;
+		(*tree)->ast = ft_btree_create_node(token);
+		// (*tree)->ast = (*((t_ptree **)(tmp->next->content)))->ast;
+		(*tree)->ast->left = (*((t_ptree **)(tmp->content)))->ast;
+		(*tree)->ast->right = (*((t_ptree **)(tmp->next->next->content)))->ast;
+	}
+	else
+		(*tree)->ast = (*((t_ptree **)(tmp->content)))->ast;
+}
+
+void 		execute_post_order_procedure(t_ptree **tree)
+{
+	if ((*tree)->type == NUMBER_TYPE)
+		number_procedure(tree);
+	else if ((*tree)->type == PLUS_TYPE || (*tree)->type == MINUS_TYPE || (*tree)->type == MULTIPLY_TYPE || (*tree)->type == DIVISION_TYPE)
+		operator_procedure(tree);
+	else if ((*tree)->type == U_RULE)
+		U_procedure(tree);
+	else if ((*tree)->type == S_RULE || (*tree)->type == T_RULE || (*tree)->type == START_TYPE)
+		rules_procedure(tree);
+}
+
+void 		generate_ast(t_ptree **tree)
+{
+	t_list *tmp;
+
+	if (!tree)
+		return ;
+	tmp = (*tree)->childs_lst;
+	while (tmp)
+	{
+		generate_ast(((t_ptree **)(tmp->content)));
+		tmp = tmp->next;
+	}
+	execute_post_order_procedure(tree);
+}
+
+// void 		print_ast(int level, t_btree *tree)
+// {
+// 	if (!tree)
+// 		return ;
+// 	print_margin(level);
+// 	ft_printf("type: %s ", get_str_type(((t_ast_token *)(tree->data))->type));
+// 	if (tree->left)
+// 	{
+// 		ft_printf("\n");
+// 		ft_printf("left : ");
+// 		print_ast(level + 1, tree->left);
+// 	}
+// 	if (tree->right)
+// 	{
+// 		ft_printf("\n");
+// 		ft_printf("right : ");
+// 		print_ast(level + 1, tree->right);
+// 	}
+// }
+
+void		p_ast(void *tree)
+{
+	ft_printf("type = %s, data = %s\n", get_str_type(((t_ast_token *)(((t_btree *)(tree))->data))->type), ((t_ast_token *)(((t_btree *)(tree))->data))->data);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//							FIN AST
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//							CALCUL
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+int		calc(t_btree *tree)
+{
+	t_ast_token *node;
+
+	node = ((t_ast_token *)(tree->data));
+	// if (node->type == NUMBER_TYPE)
+	// 	return (ft_atoi(node->data));
+	if (node->type == PLUS_TYPE)
+		return (calc(tree->left) + calc(tree->right));
+	else if (node->type == MINUS_TYPE)
+		return (calc(tree->left) - calc(tree->right));
+	else if (node->type == MULTIPLY_TYPE)
+		return (calc(tree->left) * calc(tree->right));
+	else if (node->type == DIVISION_TYPE)
+		return (calc(tree->left) / calc(tree->right));
+	return (ft_atoi(node->data));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//							FIN CALCUL
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -446,20 +807,49 @@ int main(int ac, char **av)
 	tmp = tokens_list;
 	while (tmp)
 	{
-		ft_printf("token = %s, type = %d\n", ((t_token *)(tmp->content))->token, ((t_token *)(tmp->content))->type);
+		ft_printf("token = %s, type = %s\n", ((t_token *)(tmp->content))->token, get_str_type(((t_token *)(tmp->content))->type));
 		tmp = tmp->next;
 	}
 	//
 	tokens_list_struct = create_tokens_list_struct(tokens_list);
-	ft_printf("\n\n");
-	ft_ptree_create_node(&tree, NULL, 1);
-	ft_ptree_add_child(&tree, NULL, 2);
-	ft_ptree_add_child(&tree, NULL, 3);
-	ft_ptree_add_child(&tree, NULL, 4);
-	ft_printf("test: %d\n", ((t_ptree *)(tree->childs_lst->next->content))->id);
-	// ft_ptree_add_child((t_ptree **)((t_ptree **)(tree->childs_lst->next->content)), NULL, 6);
-	// ft_ptree_add_child(((t_ptree **)(&tree->childs_lst->content)), ft_ptree_create_node(NULL, 7));
-	// ft_ptree_add_child(((t_ptree **)(&tree->childs_lst->content)), ft_ptree_create_node(NULL, 8));
-	print_ptree(0, tree);
+	// ft_printf("\n\n");
+	// ft_ptree_create_node(&tree, NULL, 1);
+	// ft_ptree_add_child(&tree, NULL, 2);
+	// ft_ptree_add_child(&tree, NULL, 3);
+	// ft_ptree_add_child(&tree, NULL, 4);
+	// ft_printf("test: %d\n", (*((t_ptree **)(tree->childs_lst->next->content)))->id);
+	// ft_ptree_add_child(((t_ptree **)(tree->childs_lst->next->content)), NULL, 6);
+	// ft_ptree_add_child_with_id(&tree, 2, NULL, 7);
+	// ft_ptree_add_child_with_id(&tree, 4, NULL, 7);
+	// // ft_ptree_add_child(((t_ptree **)(&tree->childs_lst->content)), ft_ptree_create_node(NULL, 7));
+	// // ft_ptree_add_child(((t_ptree **)(&tree->childs_lst->content)), ft_ptree_create_node(NULL, 8));
+	// print_ptree_id(0, &tree);
+	// // ft_ptree_remove_node_with_id(&tree, 1);
+	// // ft_printf("\nAPRES remove node\n");
+	// ft_printf("\n TEST \n");
+	// t_ptree **new_tree = ft_ptree_get_node_with_id(&tree, 2);
+	// ft_printf("\n APRES TEST \n");
+	// print_ptree_id(0, new_tree);
+	//
+	ft_printf("\n\nTEST DE S\n\n");
+
+	t_ptree		*tree_s = NULL;
+
+	ft_ptree_create_node(&tree_s, NULL, START_TYPE);
+	S_function(&tokens_list_struct, &tree_s);
+	ft_printf("apres s\n");
+	if (tree_s)
+		print_ptree(0, &tree_s);
+
+	// AST
+
+	generate_ast(&tree_s);
+	t_btree *ast = tree_s->ast;
+	ft_printf("\n PRINT AST : \n");
+	ft_btree_apply_prefix(ast, p_ast);
+	// print_ast(0, tree_s->ast);
+	// print_ast(0, (*((t_ptree **)(tree_s->childs_lst->content)))->ast);
+	ft_printf("\n niveaux de l'ast = %d\n", ft_btree_level_count(ast));
+	ft_printf("RESULTAT = %d\n", calc(ast));
 	return (0);
 }

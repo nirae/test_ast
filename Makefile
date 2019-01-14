@@ -6,7 +6,7 @@
 #    By: ndubouil <ndubouil@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/30 19:48:44 by ndubouil          #+#    #+#              #
-#    Updated: 2019/01/06 23:10:55 by ndubouil         ###   ########.fr        #
+#    Updated: 2019/01/14 17:11:35 by ndubouil         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,7 @@
 
 CC		=	/usr/bin/gcc
 RM		=	/bin/rm
-CFLAGS	=	-Wall -Wextra -Werror
+CFLAGS	=	-Wall -Wextra -Werror -g3
 
 # Directories
 
@@ -36,7 +36,7 @@ OBJ		=	$(patsubst %.c,%.o,$(SRCS))
 
 # Name of the project
 
-NAME	=	minishell
+NAME	=	calculator
 
 .PHONY: all clean fclean re
 
