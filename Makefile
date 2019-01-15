@@ -6,7 +6,7 @@
 #    By: ndubouil <ndubouil@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2018/09/30 19:48:44 by ndubouil          #+#    #+#              #
-#    Updated: 2019/01/14 19:29:20 by ndubouil         ###   ########.fr        #
+#    Updated: 2019/01/15 03:14:26 by ndubouil         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -21,6 +21,7 @@ CFLAGS	=	-Wall -Wextra -Werror -g3 #-fsanitize=address
 LIBFT	=	./libft/
 ILIBFT	=	./$(LIBFT)includes/
 SRC		=	./
+H		=	./
 P		=	$(SRC)parsing/
 ENV		=	$(SRC)environment/
 BT		=	$(SRC)builtins/
@@ -29,8 +30,13 @@ ENVBT	=	$(BT)env/
 
 #  Files
 
+HFILES	=	$(H)calculator.h
 MAIN	=	$(SRC)main.c
-SRCS	=	$(MAIN)
+SRCS	=	$(MAIN)															\
+			$(SRC)lexer.c													\
+			$(SRC)debug.c													\
+			$(SRC)parse_tree.c												\
+			$(SRC)ast.c
 
 OBJ		=	$(patsubst %.c,%.o,$(SRCS))
 
@@ -45,16 +51,16 @@ NAME	=	calculator
 all:		$(NAME)
 		@true
 
-$(NAME):	Makefile $(OBJ) $(MAIN) $(LIBFT)
+$(NAME):	Makefile $(OBJ) $(MAIN) $(HFILES) $(LIBFT)
 		@echo "Compiling Libft ..."
 		@make -C $(LIBFT)
 		@echo "Building $(NAME) ..."
-		@$(CC) $(CFLAGS) $(OBJ) -I$(ILIBFT) -L$(LIBFT) -lft -o $(NAME)
+		@$(CC) $(CFLAGS) $(OBJ) -I$(H) -I$(ILIBFT) -L$(LIBFT) -lft -o $(NAME)
 		@echo "I'm READY"
 
 %.o: 		%.c
 		@echo "Creating $@ ..."
-		@$(CC) $(CFLAGS) -I$(ILIBFT) -c $< -o $@
+		@$(CC) $(CFLAGS) -I$(H) -I$(ILIBFT) -c $< -o $@
 
 clean:
 		@echo "Cleaning Objs ..."
