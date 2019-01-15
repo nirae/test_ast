@@ -46,17 +46,88 @@
 #define	V_RULE						11
 #define	END_TYPE					-666
 
+typedef struct	s_token
+{
+		char	*token;
+		int		type;
+}				t_token;
+
+typedef struct			s_ptree
+{
+		int				id;
+		char			*data;
+		int				type;
+		//struct s_ptree	**childs;
+		t_list			*childs_lst;
+		int				nb_childs;
+		t_btree			*ast;
+}						t_ptree;
+
+typedef struct	s_tokens_list
+{
+				t_list	*tokens_list;
+				int		index;
+				int		size;
+}				t_tokens_list;
+
+typedef struct		s_ast_token
+{
+	int				type;
+	char			*data;
+}					t_ast_token;
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//								FONCTIONS DELETE
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+void 	free_token(void *content, size_t size)
+{
+	(void)size;
+	ft_strdel(&((*((t_token **)(content)))->token));
+	ft_memdel((void **)((t_token **)(content)));
+	ft_memdel(&content);
+}
+
+void 	del_ptree_node(void *content, size_t size);
+
+void 	free_ast_token(void *data)
+{
+	ft_strdel(&((t_ast_token *)(data))->data);
+	ft_memdel(&data);
+}
+
+void 	free_ptree_node(t_ptree **tree)
+{
+	ft_lstdel(&((*tree)->childs_lst), del_ptree_node);
+	ft_memdel((void **)tree);
+}
+
+void 	del_ptree_node(void *content, size_t size)
+{
+	(void)size;
+	if (!content)
+		return ;
+	// Free un child
+	ft_lstdel(&(*((t_ptree **)(content)))->childs_lst, del_ptree_node);
+	free_ptree_node(((t_ptree **)(content)));
+	ft_memdel(&content);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+//								FIN FONCTIONS DELETE
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //								LIST TOKEN
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct	s_token
-{
-		char	*token;
-		int		type;
-}				t_token;
+
 
 int			get_type_of_token(char *token)
 {
@@ -79,14 +150,14 @@ int			get_type_of_token(char *token)
 	return (NONE_TYPE);
 }
 
-t_token		*create_token_struct(char *token)
+void 	create_token_struct(char *token, t_token **tok)
 {
-	t_token		*tok;
+	// t_token		*tok;
 
-	tok = ft_memalloc(sizeof(t_token));
-	tok->token = ft_strdup(token);
-	tok->type = get_type_of_token(token);
-	return (tok);
+	*tok = ft_memalloc(sizeof(t_token));
+	(*tok)->token = ft_strdup(token);
+	(*tok)->type = get_type_of_token(token);
+	// return (tok);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,6 +231,7 @@ void lexer(char *line, t_list **tokens_list)
 	int current_state;
 	int next_state;
 	t_list	*token;
+	t_token	*token_struct;
 
 	current_state = START_STATE;
 	ft_bzero((void *)&stack, 512);
@@ -186,7 +258,8 @@ void lexer(char *line, t_list **tokens_list)
 				i--;
 			}
 			ft_printf("!!!!!!!!!!!!!!!!!!!!!!\netat stack ici = %s\n!!!!!!!!!!\n", stack);
-			token = ft_lstnew(create_token_struct(stack), sizeof(t_token));
+			create_token_struct(stack, &token_struct);
+			token = ft_lstnew(&token_struct, sizeof(t_token));
 			if ((*tokens_list) == NULL)
 				(*tokens_list) = token;
 			else
@@ -199,13 +272,15 @@ void lexer(char *line, t_list **tokens_list)
 	}
 	if (current_state == NUMBER_STATE)
 	{
-		token = ft_lstnew(create_token_struct(stack), sizeof(t_token));
+		create_token_struct(stack, &token_struct);
+		token = ft_lstnew(&token_struct, sizeof(t_token));
 		if ((*tokens_list) == NULL)
 			(*tokens_list) = token;
 		else
 			ft_lstaddend(tokens_list, token);
 	}
-	token = ft_lstnew(create_token_struct(NULL), sizeof(t_token));
+	create_token_struct(NULL, &token_struct);
+	token = ft_lstnew(&token_struct, sizeof(t_token));
 	ft_lstaddend(tokens_list, token);
 }
 
@@ -221,16 +296,7 @@ void lexer(char *line, t_list **tokens_list)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct			s_ptree
-{
-		int				id;
-		char			*data;
-		int				type;
-		//struct s_ptree	**childs;
-		t_list			*childs_lst;
-		int				nb_childs;
-		t_btree			*ast;
-}						t_ptree;
+
 
 void 	ft_ptree_create_node(t_ptree **tree, void *data, int type)
 {
@@ -319,13 +385,6 @@ t_ptree		**ft_ptree_get_node_with_id(t_ptree **tree, int id)
 	return (NULL);
 }
 
-void 	del_func(void *content, size_t size)
-{
-	// Free un child
-	(void)content;
-	(void)size;
-}
-
 int		ft_ptree_remove_node_with_id(t_ptree **tree, int id)
 {
 	t_list	*tmp;
@@ -338,7 +397,7 @@ int		ft_ptree_remove_node_with_id(t_ptree **tree, int id)
 	{
 		prev = tmp;
 		(*tree)->childs_lst = tmp->next;
-		ft_lstdelone(&prev, del_func);
+		ft_lstdelone(&prev, del_ptree_node);
 		(*tree)->nb_childs--;
 		return (TRUE);
 	}
@@ -348,7 +407,8 @@ int		ft_ptree_remove_node_with_id(t_ptree **tree, int id)
 		{
 			prev = tmp->next;
 			tmp->next = tmp->next->next;
-			ft_lstdelone(&prev, &del_func);
+			ft_lstdelone(&prev, del_ptree_node);
+			free(prev);
 			(*tree)->nb_childs--;
 			return (TRUE);
 		}
@@ -481,12 +541,7 @@ void 		print_ptree(int level, t_ptree **tree)
 	}
 }
 
-typedef struct	s_tokens_list
-{
-				t_list	*tokens_list;
-				int		index;
-				int		size;
-}				t_tokens_list;
+
 
 t_tokens_list		*create_tokens_list_struct(t_list *lst)
 {
@@ -508,9 +563,9 @@ int		test_current_token(t_tokens_list **tokens_list_struct, int type, t_ptree **
 		return (FALSE);
 	// ft_printf("test token : token[%s] index[%d] size[%d] type[%d] vs type entre[%d]\n", ((t_token *)(good_token->content))->token, (*tokens_list_struct)->index, (*tokens_list_struct)->size, ((t_token *)(good_token->content))->type, type);
 	// ft_printf("dans test current id arbre[%d] type[%d]\n", (*subtree)->id, (*subtree)->type);
-	if (((t_token *)(good_token->content))->type == type)
+	if ((*((t_token **)(good_token->content)))->type == type)
 	{
-		ft_ptree_add_child(subtree, ((t_token *)(good_token->content))->token, type);
+		ft_ptree_add_child(subtree, (*((t_token **)(good_token->content)))->token, type);
 		// ft_printf("\nDans test current token, retour add child [%d]\n", ft_ptree_add_child(subtree, NULL, type));
 		(*tokens_list_struct)->index++;
 		// print_ptree_type(0, subtree);
@@ -539,7 +594,10 @@ int		U_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
 	}
 	(*tokens_list_struct)->index = save_index;
 	// Reset du noeud courant
+
 	ft_ptree_remove_node_with_id(tree, id);
+	// free_ptree_node(tmp);
+
 	id = ft_ptree_add_child(tree, NULL, S_RULE);
 	tmp = ft_ptree_get_node_with_id(tree, id);
 
@@ -550,6 +608,8 @@ int		U_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
 	(*tokens_list_struct)->index = save_index;
 
 	ft_ptree_remove_node_with_id(tree, id);
+	// free_ptree_node(tmp);
+
 	return (FALSE);
 }
 
@@ -589,6 +649,8 @@ int		T_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
 	(*tokens_list_struct)->index = save_index;
 
 	ft_ptree_remove_node_with_id(tree, id);
+	// free_ptree_node(tmp);
+
 	return (FALSE);
 }
 
@@ -627,6 +689,8 @@ int		S_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
 	(*tokens_list_struct)->index = save_index;
 
 	ft_ptree_remove_node_with_id(tree, id);
+	// free_ptree_node(tmp);
+
 	return (FALSE);
 }
 
@@ -643,19 +707,13 @@ int		S_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct		s_ast_token
-{
-	int				type;
-	char			*data;
-}					t_ast_token;
-
 void 		number_procedure(t_ptree **tree)
 {
 	t_ast_token		*token;
 
 	token = ft_memalloc(sizeof(t_ast_token));
 	token->type = (*tree)->type;
-	token->data	= (*tree)->data;
+	token->data	= ft_strdup((*tree)->data);
 	(*tree)->ast = ft_btree_create_node(token);
 }
 
@@ -693,7 +751,7 @@ void 		rules_procedure(t_ptree **tree)
 	{
 		token = ft_memalloc(sizeof(t_ast_token));
 		token->type = (*((t_ptree **)(tmp->next->content)))->type;
-		token->data = (*((t_ptree **)(tmp->next->content)))->data;
+		token->data = ft_strdup((*((t_ptree **)(tmp->next->content)))->data);
 		(*tree)->ast = ft_btree_create_node(token);
 		// (*tree)->ast = (*((t_ptree **)(tmp->next->content)))->ast;
 		(*tree)->ast->left = (*((t_ptree **)(tmp->content)))->ast;
@@ -715,7 +773,7 @@ void 		execute_post_order_procedure(t_ptree **tree)
 		rules_procedure(tree);
 }
 
-void 		generate_ast(t_ptree **tree)
+void 	generate_ast(t_ptree **tree)
 {
 	t_list *tmp;
 
@@ -728,6 +786,12 @@ void 		generate_ast(t_ptree **tree)
 		tmp = tmp->next;
 	}
 	execute_post_order_procedure(tree);
+}
+
+t_btree	*get_ast(t_ptree **tree)
+{
+	generate_ast(tree);
+	return ((*tree)->ast);
 }
 
 // void 		print_ast(int level, t_btree *tree)
@@ -796,9 +860,9 @@ int main(int ac, char **av)
 	t_list	*tokens_list;
 	t_list	*tmp;
 	t_tokens_list *tokens_list_struct;
-	t_ptree	*tree;
+	// t_ptree	*tree;
 
-	tree = NULL;
+	// tree = NULL;
 	tokens_list = NULL;
 	if (ac != 2)
 		return (0);
@@ -807,7 +871,7 @@ int main(int ac, char **av)
 	tmp = tokens_list;
 	while (tmp)
 	{
-		ft_printf("token = %s, type = %s\n", ((t_token *)(tmp->content))->token, get_str_type(((t_token *)(tmp->content))->type));
+		ft_printf("token = %s, type = %s\n", (*((t_token **)(tmp->content)))->token, get_str_type((*((t_token **)(tmp->content)))->type));
 		tmp = tmp->next;
 	}
 	//
@@ -843,13 +907,29 @@ int main(int ac, char **av)
 
 	// AST
 
-	generate_ast(&tree_s);
-	t_btree *ast = tree_s->ast;
+	t_btree *ast = get_ast(&tree_s);
+
+	// Free lexer
+	ft_lstdel(&(tokens_list_struct->tokens_list), free_token);
+	ft_memdel((void **)&tokens_list_struct);
+
+	// Free parser
+	free_ptree_node(&tree_s);
+	//
+	// Free lexer
+	// ft_lstdel(&(tokens_list_struct->tokens_list), free_token);
+	// ft_memdel((void **)&tokens_list_struct);
+	//
 	ft_printf("\n PRINT AST : \n");
 	ft_btree_apply_prefix(ast, p_ast);
-	// print_ast(0, tree_s->ast);
-	// print_ast(0, (*((t_ptree **)(tree_s->childs_lst->content)))->ast);
-	ft_printf("\n niveaux de l'ast = %d\n", ft_btree_level_count(ast));
 	ft_printf("RESULTAT = %d\n", calc(ast));
+
+	// Free lexer
+	// ft_lstdel(&(tokens_list_struct->tokens_list), free_token);
+	// // Free parser
+	// ft_memdel((void **)&tokens_list_struct);
+	// free_ptree_node(&tree_s);
+	// Free ast
+	ft_btree_del(&ast, free_ast_token);
 	return (0);
 }
