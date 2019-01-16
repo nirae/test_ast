@@ -35,11 +35,12 @@ int main(int ac, char **av)
 	// Premier parsing syntaxique
 	parsing_tree(&tokens_list, &tree_s);
 	// Print l'arbre de parsing
-	//ft_print_parsing_tree(0, &tree_s);
+	// ft_print_parsing_tree(0, &tree_s);
 	// AST
 	ast = get_ast(&tree_s);
 	// Print l"AST
-	//ft_print_ast(ast);
+	// ft_printf("\n");
+	// ft_print_ast(ast);
 
 	// Delete la liste des tokens
 	delete_list_tokens(&tokens_list);

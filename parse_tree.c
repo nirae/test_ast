@@ -157,6 +157,8 @@ int		test_current_token(t_tokens_list **tokens_list_struct, int type, t_ptree **
 }
 
 static int		S_function(t_tokens_list **tokens_list_struct, t_ptree **tree);
+static int		S_prime_function(t_tokens_list **tokens_list_struct, t_ptree **tree);
+static int		T_function(t_tokens_list **tokens_list_struct, t_ptree **tree);
 
 /*
 **	Regle U
@@ -185,7 +187,7 @@ static int		U_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
 	// 		Supprime l'arbre faux qui a ete cree
 	ft_ptree_remove_node_with_id(tree, id);
 	// 		Ajout a l'arbre d'un noeud correspond a cette regle et recupere son id
-	id = ft_ptree_add_child(tree, NULL, S_RULE);
+	id = ft_ptree_add_child(tree, NULL, U_RULE);
 	//		Recupere ce noeud
 	tmp = ft_ptree_get_node_with_id(tree, id);
 	// Deuxieme regle de la grammaire
@@ -211,14 +213,14 @@ static int		T_prime_function(t_tokens_list **tokens_list_struct, t_ptree **tree)
 	// Retient l'index de la liste des tokens avant de commencer
 	save_index = (*tokens_list_struct)->index;
 	// Premiere regle de la grammaire
-	if (test_current_token(tokens_list_struct, MULTIPLY_TYPE, tree) && U_function(tokens_list_struct, tree) && T_prime_function(tokens_list_struct, tree))
+	if (test_current_token(tokens_list_struct, MULTIPLY_TYPE, tree) && T_function(tokens_list_struct, tree) && T_prime_function(tokens_list_struct, tree))
 	{
 		return (TRUE);
 	}
 	// La regle a rate -> retourne sur l'index d'avant
 	(*tokens_list_struct)->index = save_index;
 	// Deuxieme regle de la grammaire
-	if (test_current_token(tokens_list_struct, DIVISION_TYPE, tree) && U_function(tokens_list_struct, tree) && T_prime_function(tokens_list_struct, tree))
+	if (test_current_token(tokens_list_struct, DIVISION_TYPE, tree) && T_function(tokens_list_struct, tree) && T_prime_function(tokens_list_struct, tree))
 	{
 		return (TRUE);
 	}

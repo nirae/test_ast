@@ -54,8 +54,16 @@ static void 		rules_procedure(t_ptree **tree)
 		token->type = (*((t_ptree **)(tmp->next->content)))->type;
 		token->data = ft_strdup((*((t_ptree **)(tmp->next->content)))->data);
 		(*tree)->ast = ft_btree_create_node(token);
-		(*tree)->ast->left = (*((t_ptree **)(tmp->content)))->ast;
-		(*tree)->ast->right = (*((t_ptree **)(tmp->next->next->content)))->ast;
+		if ((*((t_ptree **)(tmp->next->content)))->type == MINUS_TYPE || (*((t_ptree **)(tmp->next->content)))->type == DIVISION_TYPE)
+		{
+			(*tree)->ast->right = (*((t_ptree **)(tmp->content)))->ast;
+			(*tree)->ast->left = (*((t_ptree **)(tmp->next->next->content)))->ast;
+		}
+		else
+		{
+			(*tree)->ast->left = (*((t_ptree **)(tmp->content)))->ast;
+			(*tree)->ast->right = (*((t_ptree **)(tmp->next->next->content)))->ast;
+		}
 	}
 	else
 		(*tree)->ast = (*((t_ptree **)(tmp->content)))->ast;
